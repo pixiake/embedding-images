@@ -63,6 +63,19 @@ curl http://localhost:8000/v1/embeddings \
   }'
 ```
 
+响应示例：
+```json
+{
+  "object": "list",
+  "data": [
+    {"object": "embedding", "embedding": [0.1, 0.2, ...], "index": 0},
+    {"object": "embedding", "embedding": [0.3, 0.4, ...], "index": 1}
+  ],
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "usage": {"prompt_tokens": 12, "total_tokens": 12}
+}
+```
+
 ### TEI 原生格式
 ```bash
 curl http://localhost:8000/embed \
