@@ -7,10 +7,10 @@ FROM python:3.12-slim AS downloader
 
 ARG MODEL_ID
 
-RUN pip install --no-cache-dir huggingface_hub
+RUN pip install --no-cache-dir huggingface_hub[cli]
 
 # 下载完整模型仓库到 /data/model 目录
-RUN huggingface-cli download ${MODEL_ID} --local-dir /data/model
+RUN python -m huggingface_hub.cli.cli download ${MODEL_ID} --local-dir /data/model
 
 # 第二阶段：TEI 运行时
 FROM ${BASE_IMAGE}
