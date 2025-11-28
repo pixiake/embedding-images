@@ -27,6 +27,14 @@ on:
           - ampere80
           - ampere86
           - hopper
+      model_source:
+        description: 'Model download source'
+        required: true
+        default: 'huggingface'
+        type: choice
+        options:
+          - huggingface
+          - modelscope
 
 jobs:
   build-and-push:
@@ -96,9 +104,11 @@ jobs:
           build-args: |
             BASE_IMAGE=${{ steps.set-base-image.outputs.base_image }}
             MODEL_ID=${{ github.event.inputs.model_name }}
+            MODEL_SOURCE=${{ github.event.inputs.model_source }}
           
       - name: Image digest
         run: |
           echo "Image pushed: ghcr.io/${{ github.repository }}:${{ github.event.inputs.image_tag }}"
           echo "Base image: ${{ steps.set-base-image.outputs.base_image }}"
           echo "Model: ${{ github.event.inputs.model_name }}"
+          echo "Model source: ${{ github.event.inputs.model_source }}"
