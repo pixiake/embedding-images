@@ -1,29 +1,16 @@
 # 全局 ARG（在所有 FROM 之前声明）
 ARG MODEL_ID=sentence-transformers/all-MiniLM-L6-v2
 ARG BASE_IMAGE=ghcr.io/huggingface/text-embeddings-inference:cpu-1.8.3
-# 模型来源：huggingface 或 modelscope
-ARG MODEL_SOURCE=huggingface
 
 # 第一阶段：下载模型
 FROM python:3.12-slim AS downloader
 
 ARG MODEL_ID
-ARG MODEL_SOURCE
 
-# 安装下载工具
-RUN pip install --no-cache-dir huggingface_hub modelscope
+RUN pip install --no-cache-dir huggingface_hub
 
 # 下载完整模型仓库到 /data/model 目录
-ENV MODEL_ID=${MODEL_ID}
-ENV MODEL_SOURCE=${MODEL_SOURCE}
-
-RUN if [ "$MODEL_SOURCE" = "modelscope" ]; then \
-        echo "Downloading from ModelScope: $MODEL_ID" && \
-        modelscope download --model "$MODEL_ID" --local_dir /data/model; \
-    else \
-        echo "Downloading from HuggingFace: $MODEL_ID" && \
-        huggingface-cli download "$MODEL_ID" --local-dir /data/model; \
-    fi
+RUN huggingface-cli download ${MODEL_ID} --local-dir /data/model
 
 # 第二阶段：TEI 运行时
 FROM ${BASE_IMAGE}
