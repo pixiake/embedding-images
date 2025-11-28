@@ -9,22 +9,16 @@ ARG MODEL_ID
 
 RUN pip install --no-cache-dir "huggingface_hub[cli]"
 
-# 使用 huggingface-cli 下载模型到默认缓存目录
-# 这会创建标准的 HF 缓存结构：~/.cache/huggingface/hub/models--org--model/...
-ENV HF_HOME=/data
-RUN hf download ${MODEL_ID}
+# 下载模型到 /model 目录
+RUN hf download ${MODEL_ID} --local-dir /model/${MODEL_ID}
 
 # 第二阶段：TEI 运行时
 FROM ${BASE_IMAGE}
 
 ARG MODEL_ID
 
-# 设置离线模式，启动时不会尝试联网检查/下载模型
-ENV HF_HUB_OFFLINE=1
-ENV TRANSFORMERS_OFFLINE=1
+# 从第一阶段复制已下载的模型
+COPY --from=downloader /model /model
 
-# 从第一阶段复制已下载的模型（使用标准 HF 缓存结构）
-COPY --from=downloader /data/hub /data
-
-# 设置模型 ID 环境变量，TEI 会自动读取
-ENV MODEL_ID=${MODEL_ID}
+# 使用本地路径，TEI 不会尝试下载
+ENV MODEL_ID=/model/${MODEL_ID}
