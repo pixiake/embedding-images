@@ -11,6 +11,22 @@ on:
         description: 'Docker image tag (e.g. latest, v1.0.0)'
         required: true
         default: 'latest'
+      tei_version:
+        description: 'TEI version (e.g. 1.8.3, 1.5)'
+        required: true
+        default: '1.8.3'
+      device_type:
+        description: 'Device type for TEI base image'
+        required: true
+        default: 'cpu'
+        type: choice
+        options:
+          - cpu
+          - gpu
+          - turing
+          - ampere80
+          - ampere86
+          - hopper
 
 jobs:
   build-and-push:
@@ -35,17 +51,54 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Set TEI base image
+        id: set-base-image
+        run: |
+          DEVICE_TYPE="${{ github.event.inputs.device_type }}"
+          TEI_VERSION="${{ github.event.inputs.tei_version }}"
+          
+          # 根据设备类型构建基础镜像名称
+          case "${DEVICE_TYPE}" in
+            cpu)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-${TEI_VERSION}"
+              ;;
+            gpu)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:${TEI_VERSION}"
+              ;;
+            turing)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:turing-${TEI_VERSION}"
+              ;;
+            ampere80)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:80-${TEI_VERSION}"
+              ;;
+            ampere86)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:86-${TEI_VERSION}"
+              ;;
+            hopper)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:hopper-${TEI_VERSION}"
+              ;;
+            *)
+              BASE_IMAGE="ghcr.io/huggingface/text-embeddings-inference:cpu-${TEI_VERSION}"
+              ;;
+          esac
+          
+          echo "base_image=${BASE_IMAGE}" >> $GITHUB_OUTPUT
+          echo "Using base image: ${BASE_IMAGE}"
+
       - name: Build and push multi-arch image
         uses: docker/build-push-action@v5
         with:
           context: .
           file: ./Dockerfile
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ghcr.io/${{ github.repository }}:${{ github.event.inputs.image_tag }}
           build-args: |
-            EMBEDDING_MODEL=${{ github.event.inputs.model_name }}
+            BASE_IMAGE=${{ steps.set-base-image.outputs.base_image }}
+            MODEL_ID=${{ github.event.inputs.model_name }}
           
       - name: Image digest
         run: |
           echo "Image pushed: ghcr.io/${{ github.repository }}:${{ github.event.inputs.image_tag }}"
+          echo "Base image: ${{ steps.set-base-image.outputs.base_image }}"
+          echo "Model: ${{ github.event.inputs.model_name }}"
