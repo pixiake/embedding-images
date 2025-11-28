@@ -19,14 +19,12 @@ FROM ${BASE_IMAGE}
 
 ARG MODEL_ID
 
-# 设置 HuggingFace 缓存目录
-ENV HF_HOME=/data
 # 设置离线模式，启动时不会尝试联网检查/下载模型
 ENV HF_HUB_OFFLINE=1
 ENV TRANSFORMERS_OFFLINE=1
 
 # 从第一阶段复制已下载的模型（使用标准 HF 缓存结构）
-COPY --from=downloader /data /data
+COPY --from=downloader /data/hub /data
 
 # 设置模型 ID 环境变量，TEI 会自动读取
 ENV MODEL_ID=${MODEL_ID}
