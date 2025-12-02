@@ -114,7 +114,7 @@ async def startup_event():
             # GPU 模式：使用 float16 和 device_map
             model = AutoModelForCausalLM.from_pretrained(
                 model_path,
-                torch_dtype=torch.float16,
+                dtype=torch.float16,
                 device_map="auto"
             ).eval()
         else:
