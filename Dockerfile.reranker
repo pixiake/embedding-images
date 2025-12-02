@@ -1,0 +1,47 @@
+# Qwen3-Reranker Service Dockerfile
+# 使用官方 transformers 方式，支持 CPU 和 GPU
+
+ARG MODEL_ID=Qwen/Qwen3-Reranker-0.6B
+
+# 第一阶段：下载模型
+FROM python:3.12-slim AS downloader
+
+ARG MODEL_ID
+
+RUN pip install --no-cache-dir "huggingface_hub[cli]"
+
+# 下载模型到 /model 目录
+RUN hf download ${MODEL_ID} --local-dir /model
+
+# 第二阶段：运行时
+FROM python:3.12-slim
+
+ARG MODEL_ID
+
+WORKDIR /app
+
+# 安装依赖（先安装通用包，再安装 PyTorch）
+RUN pip install --no-cache-dir \
+    fastapi>=0.115.0 \
+    uvicorn[standard]>=0.34.0 \
+    transformers>=4.47.0 && \
+    pip install --no-cache-dir \
+    torch>=2.5.0 \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# 从第一阶段复制已下载的模型
+COPY --from=downloader /model /model
+
+# 复制服务脚本
+COPY reranker_server.py /app/server.py
+
+EXPOSE 8000
+
+ENV MODEL_PATH=/model
+ENV PORT=8000
+
+# 健康检查
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+  CMD python -c "import requests; requests.get('http://localhost:8000/health').raise_for_status()"
+
+CMD ["python", "server.py"]
